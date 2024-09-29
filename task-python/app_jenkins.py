@@ -1,39 +1,60 @@
-from flask import Flask, request, jsonify
-import requests  
+from flask import Flask, jsonify, request
+import requests
 from requests.auth import HTTPBasicAuth
-import os
+
 app = Flask(__name__)
-JENKINS_URL = os.environ.get('JENKINS_URL')
-USERNAME = os.environ.get('JENKINS_USERNAME') 
-API_TOKEN = os.environ.get('JENKINS_API_TOKEN')
-content
-@app.route('/jenkins/job', methods=['POST'])
-def get_jenkins_job_details():
-    """
-    Extracts job details from Jenkins based on the incoming request.
-    """
-    data = request.get_json()
 
-    # Validate that 'git_repo_name' and 'job_name' exist in the request data
-    if not data or 'git_repo_name' not in data or 'job_name' not in data:
-        return jsonify({"error": "Missing required data in JSON"}), 400
+# Jenkins server details
+JENKINS_URL = 'http://localhost:8080'
+USERNAME = 'admin'
+API_TOKEN = '11d01377b7cdab1a1dd108f728f0129476'
+JOB_NAME = 'freestyle1'  # Your Jenkins job name
 
-    git_repo_name = data['git_repo_name']
-    job_name = data['job_name']  # Get the job name from the request data
-
-    # Jenkins URL based on the provided job name
-    url = f"{JENKINS_URL}/job/{job_name}/api/json"
-    
+@app.route('/trigger-job', methods=['POST'])
+def trigger_jenkins_job():
     try:
-        # Make a GET request to Jenkins using HTTP Basic Authentication
-        response = requests.get(url, auth=HTTPBasicAuth(USERNAME, API_TOKEN))
+        # Get the payload from the first Flask app
+        data = request.get_json()
+
+        # Extract repository details from the payload
+        repo_name = data.get('repository_name')
+        git_url = data.get('git_url')
+        latest_commit_id = data.get('latest_commit_id')
+
+        # Prepare any Jenkins parameters (if needed) with the commit details
+        # You can send these parameters to Jenkins depending on your job configuration
+
+        # Fetch Jenkins Crumb for CSRF protection
+        crumb_response = requests.get(f'{JENKINS_URL}/crumbIssuer/api/json', auth=HTTPBasicAuth(USERNAME, API_TOKEN))
         
-        if response.status_code == 200:
-            job_details = response.json()
-            return jsonify(job_details), 200
+        if crumb_response.status_code == 200:
+            crumb_data = crumb_response.json()
+            crumb_field = crumb_data['crumbRequestField']
+            crumb_value = crumb_data['crumb']
+
+            # Jenkins job URL to trigger the build
+            trigger_url = f'{JENKINS_URL}/job/{JOB_NAME}/buildWithParameters'
+            headers = {crumb_field: crumb_value}
+
+            # Prepare parameters to send along with the build trigger
+            params = {
+                'REPO_NAME': repo_name,
+                'GIT_URL': git_url,
+                'COMMIT_ID': latest_commit_id
+            }
+
+            # Send POST request to trigger the Jenkins job
+            response = requests.post(trigger_url, auth=HTTPBasicAuth(USERNAME, API_TOKEN), headers=headers, params=params)
+
+            if response.status_code == 201:
+                return jsonify({'message': f'Jenkins job {JOB_NAME} triggered successfully with commit {latest_commit_id}!'}), 201
+            else:
+                return jsonify({'error': f'Failed to trigger Jenkins job', 'status_code': response.status_code}), response.status_code
         else:
-            return jsonify({"error": f"Failed to retrieve job details: {response.status_code} - {response.text}"}), response.status_code
+            return jsonify({'error': 'Failed to fetch Jenkins crumb', 'status_code': crumb_response.status_code}), crumb_response.status_code
+
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
-    app.run(port=5001, debug=True)
+    app.run(port=5000)
