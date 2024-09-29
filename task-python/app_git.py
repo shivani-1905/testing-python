@@ -6,7 +6,6 @@ app = Flask(__name__)
 
 # URL of the second Flask app that triggers Jenkins
 SECOND_FLASK_APP_URL = 'http://localhost:5000/trigger-job'
-
 @app.route('/github-webhook', methods=['POST'])
 def github_webhook():
     # Get the JSON data from the request
