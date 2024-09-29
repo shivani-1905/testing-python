@@ -40,6 +40,5 @@ def github_webhook():
         error_response = {'error': f'Missing key: {str(e)}'}
         print(json.dumps(error_response, indent=4))  # Print the error response
         return jsonify(error_response), 400
-
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
