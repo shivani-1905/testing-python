@@ -1,28 +1,17 @@
-from flask import Flask, jsonify, request
+from flask import Flask, request, jsonify
 import requests
-from requests.auth import HTTPBasicAuth
 
 app = Flask(__name__)
-
-# Jenkins server details
-JENKINS_URL = 'http://localhost:8080'
-USERNAME = 'admin'
-API_TOKEN = '11d01377b7cdab1a1dd108f728f0129476'
-JOB_NAME = 'freestyle1'  # Your Jenkins job name
 
 @app.route('/trigger-job', methods=['POST'])
 def trigger_jenkins_job():
     try:
-        # Get the payload from the first Flask app
+        # Extract commit ID from the request data
         data = request.get_json()
+        commit_id = data.get('commit_id')
 
-        # Extract repository details from the payload
-        repo_name = data.get('repository_name')
-        git_url = data.get('git_url')
-        latest_commit_id = data.get('latest_commit_id')
-
-        # Prepare any Jenkins parameters (if needed) with the commit details
-        # You can send these parameters to Jenkins depending on your job configuration
+        if not commit_id:
+            return jsonify({'error': 'Missing commit ID'}), 400
 
         # Fetch Jenkins Crumb for CSRF protection
         crumb_response = requests.get(f'{JENKINS_URL}/crumbIssuer/api/json', auth=HTTPBasicAuth(USERNAME, API_TOKEN))
@@ -33,21 +22,14 @@ def trigger_jenkins_job():
             crumb_value = crumb_data['crumb']
 
             # Jenkins job URL to trigger the build
-            trigger_url = f'{JENKINS_URL}/job/{JOB_NAME}/buildWithParameters'
+            trigger_url = f'{JENKINS_URL}/job/{JOB_NAME}/buildWithParameters?COMMIT_ID={commit_id}'  # Send commit ID as parameter
             headers = {crumb_field: crumb_value}
 
-            # Prepare parameters to send along with the build trigger
-            params = {
-                'REPO_NAME': repo_name,
-                'GIT_URL': git_url,
-                'COMMIT_ID': latest_commit_id
-            }
-
             # Send POST request to trigger the Jenkins job
-            response = requests.post(trigger_url, auth=HTTPBasicAuth(USERNAME, API_TOKEN), headers=headers, params=params)
+            response = requests.post(trigger_url, auth=HTTPBasicAuth(USERNAME, API_TOKEN), headers=headers)
 
             if response.status_code == 201:
-                return jsonify({'message': f'Jenkins job {JOB_NAME} triggered successfully with commit {latest_commit_id}!'}), 201
+                return jsonify({'message': f'Jenkins job {JOB_NAME} triggered successfully with commit ID {commit_id}!'}), 201
             else:
                 return jsonify({'error': f'Failed to trigger Jenkins job', 'status_code': response.status_code}), response.status_code
         else:
@@ -57,4 +39,4 @@ def trigger_jenkins_job():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5000)
+    app.run(port=5001)
