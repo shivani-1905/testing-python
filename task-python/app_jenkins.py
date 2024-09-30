@@ -5,7 +5,7 @@ from requests.auth import HTTPBasicAuth
 
 app = Flask(__name__)
 
-JENKINS_URL = 'http://localhost:8080'  # Jenkins URL
+JENKINS_URL ='http://localhost:8080/job/freestyle1/buildWithParameters?COMMIT_ID=<commit_id>' 
 USERNAME = 'admin'  # Jenkins Username
 API_TOKEN = '11d01377b7cdab1a1dd108f728f0129476'  # Jenkins API Token
 JOB_NAME = 'freestyle1'  # Your Jenkins job name
