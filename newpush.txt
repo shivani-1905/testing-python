@@ -17,6 +17,6 @@ changes
 ndnslknjdd
 
 check port alway added srumb
-added parmete to jenkins
+added parmete to Jenkins i am stupid
 
 om namh shivay
