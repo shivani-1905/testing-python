@@ -28,4 +28,4 @@ def trigger_job():
         print(f"Trigger job failed with status code {trigger_response.status_code} and response: {trigger_response.content.decode()}")
         return jsonify({"error": "Failed to trigger job", "details": trigger_response.content.decode()}), 500
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5001, debug=True)  # Enable debug mode for better error messages
+    app.run(host="0.0.0.0", port=5001, debug=True)
