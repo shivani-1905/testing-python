@@ -17,5 +17,6 @@ changes
 ndnslknjdd
 
 check port alway added srumb
+added parmete to jenkins
 
 om namh shivay
