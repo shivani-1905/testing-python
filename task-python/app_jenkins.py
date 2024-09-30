@@ -1,13 +1,9 @@
 from flask import Flask, request, jsonify
 import requests
 from requests.auth import HTTPBasicAuth
+from config import JENKINS_URL, USERNAME, API_TOKEN, JOB_NAME
 
 app = Flask(__name__)
-
-# Jenkins configuration
-JENKINS_URL = 'http://localhost:8080'  # Base URL of Jenkins
-USERNAME = 'admin'  # Replace with your Jenkins username
-API_TOKEN = '11d01377b7cdab1a1dd108f728f0129476'  # Replace with your Jenkins API token
 
 @app.route('/trigger-job', methods=['POST'])
 def trigger_job():
@@ -32,7 +28,7 @@ def trigger_job():
 
     # Step 2: Trigger the job with parameters
     trigger_response = requests.post(
-        f'{JENKINS_URL}/job/freestyle1/buildWithParameters',
+        f'{JENKINS_URL}/job/{JOB_NAME}/buildWithParameters',
         headers={crumb.split(":")[0]: crumb.split(":")[1]},
         params={'COMMIT_ID': commit_id},
         auth=HTTPBasicAuth(USERNAME, API_TOKEN)
@@ -48,4 +44,4 @@ def trigger_job():
 
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0",port=5001, debug=True)  # Enable debug mode for better error messages
+    app.run(host="0.0.0.0", port=5001, debug=True)  # Enable debug mode for better error messages
