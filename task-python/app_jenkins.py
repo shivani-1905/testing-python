@@ -9,9 +9,6 @@ JENKINS_URL = 'http://localhost:8080'  # Base URL of Jenkins
 USERNAME = 'admin'  # Replace with your Jenkins username
 API_TOKEN = '11d01377b7cdab1a1dd108f728f0129476'  # Replace with your Jenkins API token
 
-# Hardcoded crumb for testing
-CRUMB = 'Jenkins-Crumb:4e1c087ba435f5fb33d46c0b56f02849daa401191c607535bd62bb0a6e54cf1b'
-
 @app.route('/trigger-job', methods=['POST'])
 def trigger_job():
     # Get JSON data from the request
@@ -22,10 +19,21 @@ def trigger_job():
     if not commit_id:
         return jsonify({"error": "Missing commit_id in request"}), 400
     
+    # Step 1: Get the crumb for CSRF protection
+    crumb_response = requests.get(
+        f'{JENKINS_URL}/crumbIssuer/api/xml?xpath=concat(//crumbRequestField,":",//crumb)', 
+        auth=HTTPBasicAuth(USERNAME, API_TOKEN)
+    )
+    
+    if crumb_response.status_code != 200:
+        return jsonify({"error": "Failed to get crumb", "details": crumb_response.content.decode()}), 500
+    
+    crumb = crumb_response.text
+
     # Step 2: Trigger the job with parameters
     trigger_response = requests.post(
         f'{JENKINS_URL}/job/freestyle1/buildWithParameters',
-        headers={CRUMB.split(":")[0]: CRUMB.split(":")[1]},  # Use hardcoded crumb
+        headers={crumb.split(":")[0]: crumb.split(":")[1]},
         params={'COMMIT_ID': commit_id},
         auth=HTTPBasicAuth(USERNAME, API_TOKEN)
     )
@@ -38,5 +46,6 @@ def trigger_job():
         print(f"Trigger job failed with status code {trigger_response.status_code} and response: {trigger_response.content.decode()}")
         return jsonify({"error": "Failed to trigger job", "details": trigger_response.content.decode()}), 500
 
+
 if __name__ == '__main__':
-    app.run(port=5001, debug=True)  # Enable debug mode for better error messages
+    app.run(host="0.0.0.0",port=5001, debug=True)  # Enable debug mode for better error messages
