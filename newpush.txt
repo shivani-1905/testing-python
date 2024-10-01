@@ -15,7 +15,7 @@ JOB_NAME = 'freestyle1'  # Your Jenkins job name
 curl -u admin:11d01377b7cdab1a1dd108f728f0129476 "http://localhost:8080/crumbIssuer/api/xml?xpath=concat(//crumbRequestField,\":\",//crumb)"
 changes
 please chnag
-
+any change
 last try changesdj
 ndnslknjdd
 
